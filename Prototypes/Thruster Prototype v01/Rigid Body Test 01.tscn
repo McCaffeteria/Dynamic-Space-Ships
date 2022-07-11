@@ -1,0 +1,19 @@
+[gd_scene load_steps=3 format=2]
+
+[sub_resource type="BoxShape" id=1]
+
+[sub_resource type="CubeMesh" id=2]
+
+[node name="Rigid Body Test 01" type="Spatial"]
+
+[node name="RigidBody" type="RigidBody" parent="."]
+
+[node name="CollisionShape" type="CollisionShape" parent="RigidBody"]
+shape = SubResource( 1 )
+
+[node name="MeshInstance" type="MeshInstance" parent="RigidBody"]
+mesh = SubResource( 2 )
+material/0 = null
+
+[node name="Camera" type="Camera" parent="."]
+transform = Transform( 0.707107, -0.241845, 0.664463, 0, 0.939693, 0.34202, -0.707107, -0.241845, 0.664463, 6, 2, 6 )
