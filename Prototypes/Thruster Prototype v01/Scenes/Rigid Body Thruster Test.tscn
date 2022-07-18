@@ -4,7 +4,7 @@
 
 [sub_resource type="CubeMesh" id=2]
 
-[node name="Rigid Body Test 01" type="Spatial"]
+[node name="Rigid Body Thruster Test" type="Spatial"]
 
 [node name="RigidBody" type="RigidBody" parent="."]
 
@@ -16,4 +16,4 @@ mesh = SubResource( 2 )
 material/0 = null
 
 [node name="Camera" type="Camera" parent="."]
-transform = Transform( 0.707107, -0.241845, 0.664463, 0, 0.939693, 0.34202, -0.707107, -0.241845, 0.664463, 6, 2, 6 )
+transform = Transform( 0.707107, -0.183013, 0.683013, 0, 0.965926, 0.258819, -0.707107, -0.183013, 0.683013, 6, 3, 6 )
