@@ -1,0 +1,173 @@
+[gd_scene load_steps=7 format=3 uid="uid://3f1kyghchl7v"]
+
+[ext_resource type="Script" path="res://Scripts/Main.gd" id="1_e8are"]
+
+[sub_resource type="BoxShape3D" id="BoxShape3D_cpr12"]
+size = Vector3(30, 30, 30)
+
+[sub_resource type="BoxMesh" id="BoxMesh_pbc6t"]
+size = Vector3(30, 30, 30)
+
+[sub_resource type="PhysicalSkyMaterial" id="PhysicalSkyMaterial_mxhim"]
+
+[sub_resource type="Sky" id="Sky_fw1f6"]
+sky_material = SubResource("PhysicalSkyMaterial_mxhim")
+
+[sub_resource type="Environment" id="Environment_8mny1"]
+background_mode = 2
+sky = SubResource("Sky_fw1f6")
+ambient_light_source = 3
+reflected_light_source = 2
+
+[node name="Node3D" type="Node3D"]
+script = ExtResource("1_e8are")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="."]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="StaticBody3D"]
+shape = SubResource("BoxShape3D_cpr12")
+
+[node name="MeshInstance3D" type="MeshInstance3D" parent="StaticBody3D/CollisionShape3D"]
+mesh = SubResource("BoxMesh_pbc6t")
+
+[node name="GravityArray" type="Node3D" parent="StaticBody3D"]
+
+[node name="GravityNode[1,1,1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 10, 10)
+
+[node name="GravityNode[0,1,1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 10)
+
+[node name="GravityNode[-1,1,1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 10, 10)
+
+[node name="GravityNode[1,1,0]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 10, 0)
+
+[node name="GravityNode[0,1,0]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, 0)
+
+[node name="GravityNode[-1,1,0]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 10, 0)
+
+[node name="GravityNode[1,1,-1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 10, -10)
+
+[node name="GravityNode[0,1,-1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 10, -10)
+
+[node name="GravityNode[-1,1,-1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 10, -10)
+
+[node name="GravityNode[1,0,1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 10)
+
+[node name="GravityNode[0,0,1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 10)
+
+[node name="GravityNode[-1,0,1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 10)
+
+[node name="GravityNode[1,0,0]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, 0)
+
+[node name="GravityNode[0,0,0]" type="Node3D" parent="StaticBody3D/GravityArray"]
+
+[node name="GravityNode[-1,0,0]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, 0)
+
+[node name="GravityNode[1,0,-1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, 0, -10)
+
+[node name="GravityNode[0,0,-1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -10)
+
+[node name="GravityNode[-1,0,-1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, 0, -10)
+
+[node name="GravityNode[1,-1,1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, -10, 10)
+
+[node name="GravityNode[0,-1,1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10, 10)
+
+[node name="GravityNode[-1,-1,1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, -10, 10)
+
+[node name="GravityNode[1,-1,0]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, -10, 0)
+
+[node name="GravityNode[0,-1,0]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10, 0)
+
+[node name="GravityNode[-1,-1,0]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, -10, 0)
+
+[node name="GravityNode[1,-1,-1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 10, -10, -10)
+
+[node name="GravityNode[0,-1,-1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -10, -10)
+
+[node name="GravityNode[-1,-1,-1]" type="Node3D" parent="StaticBody3D/GravityArray"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -10, -10, -10)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_8mny1")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="WorldEnvironment"]
+transform = Transform3D(0.928486, -0.262597, 0.262597, 0, 0.707107, 0.707107, -0.371368, -0.656539, 0.656539, 0, 0, 0)
+shadow_enabled = true
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="MainMenu" type="PanelContainer" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 404.0
+offset_top = 218.0
+offset_right = -404.0
+offset_bottom = -218.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="CanvasLayer/MainMenu"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CanvasLayer/MainMenu/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Label" type="Label" parent="CanvasLayer/MainMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Main Menu"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="HostButton" type="Button" parent="CanvasLayer/MainMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Host"
+
+[node name="JoinButton" type="Button" parent="CanvasLayer/MainMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Join"
+
+[node name="AdressEntry" type="LineEdit" parent="CanvasLayer/MainMenu/MarginContainer/VBoxContainer"]
+layout_mode = 2
+placeholder_text = "Enter Host Adress"
+alignment = 1
+
+[node name="PlayerSpawnLocation" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 25, 0)
+
+[node name="MultiplayerSpawner" type="MultiplayerSpawner" parent="."]
+_spawnable_scenes = PackedStringArray("res://Scenes/Player.tscn")
+spawn_path = NodePath("..")
+
+[connection signal="pressed" from="CanvasLayer/MainMenu/MarginContainer/VBoxContainer/HostButton" to="." method="_on_host_button_pressed"]
+[connection signal="pressed" from="CanvasLayer/MainMenu/MarginContainer/VBoxContainer/JoinButton" to="." method="_on_join_button_pressed"]
