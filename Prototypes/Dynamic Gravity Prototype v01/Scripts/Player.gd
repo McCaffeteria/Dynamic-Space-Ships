@@ -1,5 +1,7 @@
 extends RigidBody3D
 
+@onready var camera = $Camera3D
+
 var move_speed = 3 #meters per second, average walking speed is 1.4
 var look_speed = 1.5 #radians
 var multiplier = 100
@@ -11,7 +13,18 @@ var input_rot = Vector3.ZERO
 var output_rot_basis = Basis()
 var output_rot = Vector3.ZERO
 
+func _enter_tree():
+	set_multiplayer_authority(str(name).to_int())
+	self.position = get_node("../PlayerSpawnLocation").position
+
+func _ready():
+	if not is_multiplayer_authority(): return
+	
+	camera.current = true
+
 func _physics_process(delta):
+	if not is_multiplayer_authority(): return
+	
 	apply_central_force(get_node("..").calc_grav(self))
 	
 	#Local refference

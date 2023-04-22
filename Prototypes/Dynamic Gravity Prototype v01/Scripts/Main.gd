@@ -4,10 +4,11 @@ extends Node3D
 @onready var address_entry = $CanvasLayer/MainMenu/MarginContainer/VBoxContainer/AdressEntry
 
 const Player = preload("res://Scenes/Player.tscn")
+const PlayerStupid = preload("res://Scenes/PlayerStupid.tscn")
 const PORT = 9999
 var enet_peer = ENetMultiplayerPeer.new()
 
-var grav_array
+@export var grav_array : Array
 const G = 6.6743 * pow(10, -11)
 const M = (7.3 * pow(10, 11)) / 27 #kilograms
 const MPLAYER = 80 #kilograms
@@ -30,16 +31,21 @@ func _on_host_button_pressed():
 	multiplayer.peer_connected.connect(add_player)
 	
 	add_player(multiplayer.get_unique_id())
+	
+	#upnp_setup()
 
 func _on_join_button_pressed():
 	main_menu.hide()
 	
-	enet_peer.create_client("localhost", PORT)
+	if address_entry.text == "":
+		enet_peer.create_client("localhost", PORT)
+	else:
+		enet_peer.create_client(address_entry.text, PORT)
 	multiplayer.multiplayer_peer = enet_peer
 
 func add_player(peer_id):
-	var player = Player.instantiate()
-	player.position = $PlayerSpawnLocation.position
+	var player
+	player = Player.instantiate()
 	player.name = str(peer_id)
 	add_child(player)
 
@@ -50,6 +56,23 @@ func calc_grav(target):
 	var grav = Vector3() #newtons
 	var dist = Vector3() #meters
 	for g in grav_array:
-		dist = g.position - target.position
-		grav = grav + dist.normalized()  *  (G * ((M*MPLAYER)/dist.length()))
+		dist = g.global_position - target.global_position
+		if dist.length() != 0:
+			grav = grav + dist.normalized()  *  (G * ((M*MPLAYER)/dist.length()))
 	return grav
+
+#func upnp_setup():
+#	var upnp = UPNP.new()
+#	
+#	var discover_result = upnp.discover()
+#	assert(discover_result == UPNP.UPNP_RESULT_SUCCESS, \
+#		"UPNP Discover Failed! Error %s" % discover_result)
+#	
+#	assert(upnp.get_gateway() and upnp.get_gateway().is_valid_gateway(), \
+#		"UPNP Invalid Gateway!")
+#	
+#	var map_result = upnp.add_port_mapping(PORT)
+#	assert(map_result == UPNP.UPNP_RESULT_SUCCESS, \
+#		"UPNP Port Mapping Failed! Error %s" % map_result)
+#	
+#	print("Success! Join Address: %s" % upnp.query_external_adress())
