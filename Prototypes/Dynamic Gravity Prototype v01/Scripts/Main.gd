@@ -61,7 +61,7 @@ func calc_grav(target):
 			grav = grav + dist.normalized()  *  (G * ((M*MPLAYER)/dist.length()))
 	return grav
 
-#func upnp_setup():
+#func upnp_setup(): #Use NAT Hole Punching instead, I guess.
 #	var upnp = UPNP.new()
 #	
 #	var discover_result = upnp.discover()
