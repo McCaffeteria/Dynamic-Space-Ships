@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3 uid="uid://8t65st8l6h1j"]
+[gd_scene load_steps=5 format=3 uid="uid://n0phtyayp8kf"]
 
 [ext_resource type="Script" path="res://Scripts/Player.gd" id="1_3yuwh"]
 
@@ -21,7 +21,6 @@ properties/3/spawn = true
 properties/3/sync = true
 
 [node name="RigidBody3D" type="RigidBody3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)
 mass = 80.0
 gravity_scale = 0.0
 script = ExtResource("1_3yuwh")
@@ -34,7 +33,10 @@ shape = SubResource("CapsuleShape3D_f73jh")
 mesh = SubResource("CapsuleMesh_uprxv")
 skeleton = NodePath("")
 
-[node name="Camera3D" type="Camera3D" parent="."]
+[node name="CameraFirstPerson" type="Camera3D" parent="."]
+
+[node name="CameraThirdPerson" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.940881, 0.338738, 0, -0.338738, 0.940881, 0, 0.279, 1.951)
 
 [node name="MultiplayerSynchronizer" type="MultiplayerSynchronizer" parent="."]
 replication_config = SubResource("SceneReplicationConfig_8f403")

@@ -4,7 +4,6 @@ extends Node3D
 @onready var address_entry = $CanvasLayer/MainMenu/MarginContainer/VBoxContainer/AdressEntry
 
 const Player = preload("res://Scenes/Player.tscn")
-const PlayerStupid = preload("res://Scenes/PlayerStupid.tscn")
 const PORT = 9999
 var enet_peer = ENetMultiplayerPeer.new()
 
@@ -16,7 +15,6 @@ const MPLAYER = 80 #kilograms
 # Called when the node enters the scene tree for the first time.
 func _ready():
 	init_grav()
-
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
