@@ -1,10 +1,12 @@
 extends RigidBody3D
 
-@onready var camera_first_person = $CameraFirstPerson
-@onready var camera_third_person = $CameraThirdPerson
+@onready var camera_first_person = get_node("AstronautRigged/Astronaut_Armature/Skeleton3D/Physical Bone Head/CameraFirstPerson")
+@onready var camera_third_person = get_node("AstronautRigged/Astronaut_Armature/Skeleton3D/Physical Bone Head/CameraThirdPerson")
+@onready var astronaut_rigged_head = get_node("AstronautRigged/Astronaut_Armature/Skeleton3D/Physical Bone Head")
 
 var move_speed = 3 #meters per second, average walking speed is 1.4
 var look_speed = 1.5 #radians
+var look_speed_mouse = .005 #multiplied with look speed.
 var input_multiplier = 100
 
 var input_dir = Vector3.ZERO
@@ -13,6 +15,8 @@ var output_dir = Vector3.ZERO
 var input_rot = Vector3.ZERO
 var output_rot_basis = Basis()
 var output_rot = Vector3.ZERO
+var output_rot_mouse_basis = Basis()
+var output_rot_mouse = Vector3.ZERO
 
 var current_gravity = Vector3.ZERO
 var flight_assist = false
@@ -26,7 +30,14 @@ func _enter_tree():
 func _ready():
 	if not is_multiplayer_authority(): return
 	
-	camera_third_person.current = true
+	camera_first_person.current = true
+	
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+
+func _unhandled_input(event):
+	if event is InputEventMouseMotion:
+		astronaut_rigged_head.rotate_y(-event.relative.x * look_speed_mouse)
+		astronaut_rigged_head.rotate(astronaut_rigged_head.transform.basis.x, (event.relative.y * look_speed_mouse))
 	
 func _process(delta):
 	if Input.is_action_just_pressed("change_camera"):
@@ -41,14 +52,22 @@ func _physics_process(delta):
 	current_gravity = get_node("..").calc_grav(self)
 	apply_central_force(current_gravity)
 	
-	collect_input()
+	#if colliding, rotate to stand up
 	
+	#Collect mouse and controller look input, combine them
+	
+	#Rotate head bone acording to look input.
+	
+	#Collect movement input
+	collect_input()
 	local_to_parent_input()
 	
+	#Calculate flight assist which includes aligning body to match head direction
 	if flight_assist == true:
 		calc_flight_assist()
+			#flight assist towards head look angle, apply flight assist force, calculate/read new rotation, subtract that cahnge in flight assist rotation from the head bone rotation so that the head is in the same spot it started in before FA.
 	
-	#parent refference
+	#These forces are aplied from the rigid body's parent's refference.
 	apply_central_force(output_dir)
 	apply_torque(output_rot)
 
@@ -69,7 +88,7 @@ func toggle_flight_assist():
 		print("Flight assst on.")
 
 func collect_input():
-	#Local refference
+	#These vectors are measured from the rigid body's local refference.
 	input_dir = Vector3.ZERO
 	input_rot = Vector3.ZERO
 	input_dir.x -= Input.get_action_strength("move_left")

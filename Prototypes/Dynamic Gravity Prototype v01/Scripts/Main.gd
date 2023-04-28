@@ -16,6 +16,10 @@ const MPLAYER = 80 #kilograms
 func _ready():
 	init_grav()
 
+func _unhandled_input(event):
+	if Input.is_action_just_pressed("quit"):
+		get_tree().quit()
+
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(delta):
 	pass
