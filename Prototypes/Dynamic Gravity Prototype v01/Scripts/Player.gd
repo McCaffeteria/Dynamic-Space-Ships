@@ -1,8 +1,9 @@
 extends RigidBody3D
 
-@onready var camera_first_person = get_node("AstronautRigged/Astronaut_Armature/Skeleton3D/Physical Bone Head/CameraFirstPerson")
+@onready var camera_first_person = $"AstronautRigged/Astronaut_Armature/Skeleton3D/Physical Bone Neck/CameraFirstPerson_fixer/CameraFirstPerson_joint/CameraFirstPerson"
 @onready var camera_third_person = get_node("AstronautRigged/Astronaut_Armature/Skeleton3D/Physical Bone Head/CameraThirdPerson")
 @onready var astronaut_rigged_head = get_node("AstronautRigged/Astronaut_Armature/Skeleton3D/Physical Bone Head")
+@onready var astronaut_head_joint = $"AstronautRigged/Astronaut_Armature/Skeleton3D/Physical Bone Neck/CameraFirstPerson_fixer/CameraFirstPerson_joint"
 
 #This whole section with speed modifiers is fucked, consoldate it once I figure out my final control scheme.
 var move_speed = 3 #meters per second, average walking speed is 1.4
@@ -133,29 +134,30 @@ func collect_input_map():
 	input_move.w += Input.get_action_strength("roll_left")
 
 func rotate_player_head():
-	#Rotate the head acording to user input, Converted fromt local space
-	astronaut_rigged_head.rotate(astronaut_rigged_head.transform.basis.z, (-input_look.x)) #Look left and right
-	astronaut_rigged_head.rotate(astronaut_rigged_head.transform.basis.x, (-input_look.y)) #Look up and down
+	#Rotate the head acording to user input, Rotation is executed in global space/converted fromt local space
+	astronaut_head_joint.rotate(astronaut_head_joint.transform.basis.y, (input_look.x)) #Look left and right
+	astronaut_head_joint.rotate(astronaut_head_joint.transform.basis.x, (-input_look.y)) #Look up and down
 
 func rotate_player_body():
 	#Check whether the body matches the head global rotation, and if not then rotate the body towards it.
 	#I think this will apply torque in "parent space" which is technically different to global space. Keep in mind that if I ever put this in a scene where the player's parent object is rotated then this code will not work because I'm checking against the gloabl rotation and applying parent rotation. If the parent isn't globally aligned then it will just rotate forever the wrong way.
+	var initial_rot = astronaut_head_joint.rotation
 	var temp_rot
 	
-	temp_rot = camera_first_person.global_rotation.x - self.global_rotation.x
+	temp_rot = initial_rot.x
+	print("Initial: " +str(initial_rot.x))
 	if (temp_rot > .005) or (temp_rot < -.005):
 		apply_torque(Vector3(temp_rot * 60, 0, 0))
-		
-	if (camera_first_person.global_rotation.y - self.global_rotation.y > .005) or (camera_first_person.global_rotation.y - self.global_rotation.y < -.005):
-		apply_torque(Vector3(0, (camera_first_person.global_rotation.y - self.global_rotation.y) * 60, 0))
-	if (camera_first_person.global_rotation.z - self.global_rotation.z > .005) or (camera_first_person.global_rotation.z - self.global_rotation.z < -.005):
-		apply_torque(Vector3(0, 0, (camera_first_person.global_rotation.z - self.global_rotation.z) * 60))
-
-func align_body_to_head():
-	#Default head orientation is (1.540952, -3.14142, -3.14142)
+		print("New: " + str(astronaut_head_joint.rotation.x))
+		#astronaut_rigged_head.rotate()
 	
-	pass
-
+	if (temp_rot > .005) or (temp_rot < -.005):
+		#apply_torque(Vector3(0, temp_rot * 60, 0))
+		pass
+		
+	if (temp_rot > .005) or (temp_rot < -.005):
+		#apply_torque(Vector3(0, 0, temp_rot * 60))
+		pass
 func local_to_parent_input(): #Old
 	#Converts from local to parent space
 	output_dir_basis.x = input_dir.x * transform.basis.x
