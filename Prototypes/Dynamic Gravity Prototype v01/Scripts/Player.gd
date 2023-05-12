@@ -14,6 +14,10 @@ var input_multiplier = 100
 
 var input_look = Vector2.ZERO
 var input_move = Vector4.ZERO
+var global_look_conversion = Vector3.ZERO
+var basic_x_basis = Vector3(1, 0, 0)
+var basic_y_basis = Vector3(0, 1, 0)
+var basic_z_basis = Vector3(0, 0, 1)
 
 var input_dir = Vector3.ZERO
 var output_dir_basis = Basis()
@@ -61,7 +65,7 @@ func _physics_process(delta):
 	
 	collect_input_map()
 	rotate_player_head()
-	rotate_player_body()
+	#rotate_player_body()
 	
 	#collect_input()
 	#local_to_parent_input()
@@ -117,6 +121,8 @@ func collect_input(): #Old
 func collect_mouse_input(mouse_movement):
 	input_look.x -= mouse_movement.relative.x * look_speed_mouse
 	input_look.y -= mouse_movement.relative.y * look_speed_mouse
+	#Mouse input: Up is posotive Y, Left is positive X (for some ungodly reason)
+	#Game orientation: Up is positive Y, Left is NEGATIVE X
 
 func collect_input_map():
 	input_look.x -= Input.get_action_strength("look_right") * look_speed_controller
@@ -134,9 +140,29 @@ func collect_input_map():
 	input_move.w += Input.get_action_strength("roll_left")
 
 func rotate_player_head():
-	#Rotate the head acording to user input, Rotation is executed in global space/converted fromt local space
-	astronaut_head_joint.rotate(astronaut_head_joint.transform.basis.y, (input_look.x)) #Look left and right
-	astronaut_head_joint.rotate(astronaut_head_joint.transform.basis.x, (-input_look.y)) #Look up and down
+	global_look_conversion = Vector3.ZERO
+	basic_x_basis = Vector3(1, 0, 0)
+	basic_y_basis = Vector3(0, 1, 0)
+	basic_z_basis = Vector3(0, 0, 1)
+	
+	#Rotate Y
+	global_look_conversion = Vector3(input_look.y, input_look.x, 0).rotated(basic_y_basis, astronaut_head_joint.global_rotation.y)
+	basic_x_basis = basic_x_basis.rotated(basic_y_basis, astronaut_head_joint.global_rotation.y)
+	basic_z_basis = basic_z_basis.rotated(basic_y_basis, astronaut_head_joint.global_rotation.y)
+	#Rotate X
+	global_look_conversion = global_look_conversion.rotated(basic_x_basis, astronaut_head_joint.global_rotation.x)
+	basic_z_basis = basic_z_basis.rotated(basic_x_basis, astronaut_head_joint.global_rotation.x)
+	#Rotate Z
+	global_look_conversion = global_look_conversion.rotated(basic_z_basis, astronaut_head_joint.global_rotation.z)
+	#Execute
+	astronaut_head_joint.rotate(global_look_conversion.normalized(), global_look_conversion.length())
+	
+	#The YXZ-Euler rotation is a series of local rotations, so I need to generate a few Basis vectors and rotate them as well in order to have local axis refferences while I'm mid-rotation. The built in object basis parameters are all post rotation which is unhelpful here.
+	#Normally when I rotate the input by 90 degrees i would invert the x values, but x is ALREADY backwards in mouse input so they are both positive here.
+	#The local vector that represents the torque vector I want to rotate the head and body along is calulated by rotating the input vector 90 degrees clockwise (based on the right hand rule, double check that this is correct later)
+	#The global_rotation property of the head tells me the amount i need to rotate the local vector by to "line up" with the head. The global_rotation property is defined in YXZ-Euler angles, so I rotate the input vector by each of those steps in order to get the gloabl input vector.
+	#The gloabl input vector is now the "global axis" that I want to rotate the head around. I will need to use a normalized version of it to rotate around, and I will need to rotate it by it's magnitude.
+	pass
 
 func rotate_player_body():
 	#Check whether the body matches the head global rotation, and if not then rotate the body towards it.
