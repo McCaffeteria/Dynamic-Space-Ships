@@ -18,6 +18,7 @@ var global_look_conversion = Vector3.ZERO
 var basic_x_basis = Vector3(1, 0, 0)
 var basic_y_basis = Vector3(0, 1, 0)
 var basic_z_basis = Vector3(0, 0, 1)
+var post_input_head_rotation = Vector3.ZERO
 
 var input_dir = Vector3.ZERO
 var output_dir_basis = Basis()
@@ -156,6 +157,8 @@ func rotate_player_head():
 	global_look_conversion = global_look_conversion.rotated(basic_z_basis, astronaut_head_joint.global_rotation.z)
 	#Execute
 	astronaut_head_joint.rotate(global_look_conversion.normalized(), global_look_conversion.length())
+	
+	post_input_head_rotation = astronaut_head_joint.rotation #This is being saved so that I can refference it next frame.
 	
 	#The YXZ-Euler rotation is a series of local rotations, so I need to generate a few Basis vectors and rotate them as well in order to have local axis refferences while I'm mid-rotation. The built in object basis parameters are all post rotation which is unhelpful here.
 	#Normally when I rotate the input by 90 degrees i would invert the x values, but x is ALREADY backwards in mouse input so they are both positive here.
