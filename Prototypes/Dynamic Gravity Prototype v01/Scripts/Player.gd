@@ -18,7 +18,8 @@ var global_look_conversion = Vector3.ZERO
 var basic_x_basis = Vector3(1, 0, 0)
 var basic_y_basis = Vector3(0, 1, 0)
 var basic_z_basis = Vector3(0, 0, 1)
-var post_input_head_rotation = Vector3.ZERO
+var post_input_head_rotation = Vector3.ZERO #This is stored durring physics processing and is used later durring the idle process to reorient the camera after the physics has been calculated but before the frame is drawn.
+var is_first_physics_process = true #This is set to be true during _process() in ppreperation for the next loop and is set false durring the first _physics_process() of the loop.
 
 var input_dir = Vector3.ZERO
 var output_dir_basis = Basis()
@@ -50,23 +51,22 @@ func _unhandled_input(event):
 		#astronaut_rigged_head.rotate_y(-event.relative.x * look_speed_mouse) #Parent space, no conversion
 		#astronaut_rigged_head.rotate(astronaut_rigged_head.transform.basis.x, (event.relative.y * look_speed_mouse)) #Converted fromt local space
 		collect_mouse_input(event)
-	
-func _process(delta):
-	if Input.is_action_just_pressed("change_camera"):
-		toggle_camera()
-	
-	if Input.is_action_just_pressed("toggle_flight_assist"):
-		toggle_flight_assist()
 
 func _physics_process(delta):
+	counter_rotate_player_head()
+	print("Physics Process starting rotation: " + str(astronaut_head_joint.global_rotation))
 	if not is_multiplayer_authority(): return
 	
 	current_gravity = get_node("..").calc_grav(self)
 	#apply_central_force(current_gravity)
 	
-	collect_input_map()
-	rotate_player_head()
-	#rotate_player_body()
+	if is_first_physics_process == true:
+		collect_input_map()
+		rotate_player_head_physics()
+		
+		is_first_physics_process = false
+	
+	rotate_player_body_toward_look_direction()
 	
 	#collect_input()
 	#local_to_parent_input()
@@ -79,8 +79,19 @@ func _physics_process(delta):
 	#These forces are aplied from the rigid body's parent's refference.
 	apply_central_force(output_dir)
 	apply_torque(output_rot)
+
+func _process(delta):
+	if Input.is_action_just_pressed("change_camera"):
+		toggle_camera()
 	
-	#I'm clearing these values at the end of the logic in preperation for next frame because I'm using the same variable in multiple seemingly asyncronus methods. Consider using two values for controller and mouse input and reset values within the methods.
+	if Input.is_action_just_pressed("toggle_flight_assist"):
+		toggle_flight_assist()
+	
+	print("Idle process starting rotation: " + str(astronaut_head_joint.global_rotation))
+	#counter_rotate_player_head()
+	
+	#Clean up for next loop
+	is_first_physics_process = true
 	input_look = Vector2.ZERO
 	input_move = Vector4.ZERO
 
@@ -140,7 +151,7 @@ func collect_input_map():
 	input_move.w -= Input.get_action_strength("roll_right")
 	input_move.w += Input.get_action_strength("roll_left")
 
-func rotate_player_head():
+func rotate_player_head_physics():
 	global_look_conversion = Vector3.ZERO
 	basic_x_basis = Vector3(1, 0, 0)
 	basic_y_basis = Vector3(0, 1, 0)
@@ -156,9 +167,11 @@ func rotate_player_head():
 	#Rotate Z
 	global_look_conversion = global_look_conversion.rotated(basic_z_basis, astronaut_head_joint.global_rotation.z)
 	#Execute
-	astronaut_head_joint.rotate(global_look_conversion.normalized(), global_look_conversion.length())
+	astronaut_head_joint.global_rotate(global_look_conversion.normalized(), global_look_conversion.length())
+	#At this point I have a 3D vector in global coordinates who's direction represents the axis that the camera rotates around and who's magnitude repsents the amount to rotate. This might be better off using the .global_rotate() method but I'm not sure. It might only work now because the player's body is always aligned with the global coordinates.
 	
-	post_input_head_rotation = astronaut_head_joint.rotation #This is being saved so that I can refference it next frame.
+	post_input_head_rotation = astronaut_head_joint.global_rotation #This is being saved so that I can refference it next frame.
+	print("Post input rotation: " + str(astronaut_head_joint.global_rotation))
 	
 	#The YXZ-Euler rotation is a series of local rotations, so I need to generate a few Basis vectors and rotate them as well in order to have local axis refferences while I'm mid-rotation. The built in object basis parameters are all post rotation which is unhelpful here.
 	#Normally when I rotate the input by 90 degrees i would invert the x values, but x is ALREADY backwards in mouse input so they are both positive here.
@@ -167,26 +180,23 @@ func rotate_player_head():
 	#The gloabl input vector is now the "global axis" that I want to rotate the head around. I will need to use a normalized version of it to rotate around, and I will need to rotate it by it's magnitude.
 	pass
 
-func rotate_player_body():
+func rotate_player_body_toward_look_direction():
 	#Check whether the body matches the head global rotation, and if not then rotate the body towards it.
 	#I think this will apply torque in "parent space" which is technically different to global space. Keep in mind that if I ever put this in a scene where the player's parent object is rotated then this code will not work because I'm checking against the gloabl rotation and applying parent rotation. If the parent isn't globally aligned then it will just rotate forever the wrong way.
-	var initial_rot = astronaut_head_joint.rotation
-	var temp_rot
 	
-	temp_rot = initial_rot.x
-	print("Initial: " +str(initial_rot.x))
-	if (temp_rot > .005) or (temp_rot < -.005):
-		apply_torque(Vector3(temp_rot * 60, 0, 0))
-		print("New: " + str(astronaut_head_joint.rotation.x))
-		#astronaut_rigged_head.rotate()
-	
-	if (temp_rot > .005) or (temp_rot < -.005):
-		#apply_torque(Vector3(0, temp_rot * 60, 0))
-		pass
-		
-	if (temp_rot > .005) or (temp_rot < -.005):
-		#apply_torque(Vector3(0, 0, temp_rot * 60))
-		pass
+	#This assumes the camera node and the player body node are both facing the same exact direction globally by default, which I think I made sure was the case.
+	if (astronaut_head_joint.rotation.y > .005) or (astronaut_head_joint.rotation.y < -.005):
+		self.apply_torque(Vector3(0, astronaut_head_joint.rotation.y, 0))
+	if (astronaut_head_joint.rotation.x > .005) or (astronaut_head_joint.rotation.x < -.005):
+		self.apply_torque(Vector3(astronaut_head_joint.rotation.x, 0, 0))
+	if (astronaut_head_joint.rotation.z > .005) or (astronaut_head_joint.rotation.z < -.005):
+		self.apply_torque(Vector3(0, 0, astronaut_head_joint.rotation.z))
+	#These are over rotating, probably because I'm not doing them stepwise and they overlap a bit. Either that or because they need deceleration forces.
+	#What I actually need is an activation function that defines a target velocity at any given rotation and calculates the difference in actual vs target velocity and then applies a force based on that difference.
+
+func counter_rotate_player_head():
+	astronaut_head_joint.set_global_rotation(post_input_head_rotation)
+
 func local_to_parent_input(): #Old
 	#Converts from local to parent space
 	output_dir_basis.x = input_dir.x * transform.basis.x
