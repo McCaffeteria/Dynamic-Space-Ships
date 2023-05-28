@@ -21,6 +21,10 @@ var basic_z_basis = Vector3(0, 0, 1)
 var post_input_head_rotation = Vector3.ZERO #This is stored durring physics processing and is used later durring the idle process to reorient the camera after the physics has been calculated but before the frame is drawn.
 var is_first_physics_process = true #This is set to be true during _process() in ppreperation for the next loop and is set false durring the first _physics_process() of the loop.
 
+#used in player_body_look_activation_function() to set the turn-to-face activation force.
+var body_rotation_activation_scaler = 10
+var body_rotation_activation_threshold = .005
+
 var input_dir = Vector3.ZERO
 var output_dir_basis = Basis()
 var output_dir = Vector3.ZERO
@@ -54,7 +58,7 @@ func _unhandled_input(event):
 
 func _physics_process(delta):
 	counter_rotate_player_head()
-	print("Physics Process starting rotation: " + str(astronaut_head_joint.global_rotation))
+	
 	if not is_multiplayer_authority(): return
 	
 	current_gravity = get_node("..").calc_grav(self)
@@ -86,9 +90,6 @@ func _process(delta):
 	
 	if Input.is_action_just_pressed("toggle_flight_assist"):
 		toggle_flight_assist()
-	
-	print("Idle process starting rotation: " + str(astronaut_head_joint.global_rotation))
-	#counter_rotate_player_head()
 	
 	#Clean up for next loop
 	is_first_physics_process = true
@@ -171,7 +172,6 @@ func rotate_player_head_physics():
 	#At this point I have a 3D vector in global coordinates who's direction represents the axis that the camera rotates around and who's magnitude repsents the amount to rotate. This might be better off using the .global_rotate() method but I'm not sure. It might only work now because the player's body is always aligned with the global coordinates.
 	
 	post_input_head_rotation = astronaut_head_joint.global_rotation #This is being saved so that I can refference it next frame.
-	print("Post input rotation: " + str(astronaut_head_joint.global_rotation))
 	
 	#The YXZ-Euler rotation is a series of local rotations, so I need to generate a few Basis vectors and rotate them as well in order to have local axis refferences while I'm mid-rotation. The built in object basis parameters are all post rotation which is unhelpful here.
 	#Normally when I rotate the input by 90 degrees i would invert the x values, but x is ALREADY backwards in mouse input so they are both positive here.
@@ -181,16 +181,42 @@ func rotate_player_head_physics():
 	pass
 
 func rotate_player_body_toward_look_direction():
+	#Because of Godot's weird axes, this is actually manipulating the BACK of the player and camera since "forward" is -Z
+	
+	#Calculate rotation from tips, which I will rotate the interpolated vector around.
+	var tip_vector = self.basis.z - astronaut_head_joint.basis.z #This vector points FROM self TO head, but offset onto the origin.
+	print("Tip vector length: " + str(tip_vector.length()))
+	if tip_vector.length() > body_rotation_activation_threshold:
+		#Calculate the interpolated vector.
+		var interpolated_vector = astronaut_head_joint.basis.z.slerp(self.basis.z, .5)
+		print("Self basis: " + str(self.basis.z))
+		print("Slerp vector: " + str(interpolated_vector))
+		print("Head basis: " + str(astronaut_head_joint.basis.z))
+		#Rotate the interpolated vector 90 degrees around the tip vector.
+		interpolated_vector = interpolated_vector.rotated(tip_vector.normalized(), .5 * PI) #Fucking radians
+		print("rotated vector: " + str(interpolated_vector))
+		#Set the interpolated vector's magnitude to be poportional to the angle between starting and target vectors.
+		interpolated_vector = interpolated_vector * (astronaut_head_joint.basis.z.angle_to(self.basis.z)/interpolated_vector.length())
+		
+		#Assuming the interpolated vector's magnitude is the speed I want to be rotating, calculate the difference between it and the current angular velocity, and then apply that as torque.
+		self.apply_torque(interpolated_vector - self.get_angular_velocity())
+	pass
+
+func rotate_player_body_toward_look_direction_OLD():
 	#Check whether the body matches the head global rotation, and if not then rotate the body towards it.
 	#I think this will apply torque in "parent space" which is technically different to global space. Keep in mind that if I ever put this in a scene where the player's parent object is rotated then this code will not work because I'm checking against the gloabl rotation and applying parent rotation. If the parent isn't globally aligned then it will just rotate forever the wrong way.
 	
+	var body_torque_output = Vector3((astronaut_head_joint.rotation.x * body_rotation_activation_scaler) - self.angular_velocity.x, (astronaut_head_joint.rotation.y * body_rotation_activation_scaler) - self.angular_velocity.y, (astronaut_head_joint.rotation.z * body_rotation_activation_scaler) - self.angular_velocity.z)
+	
+	print("Difference in actual vs target velocity: " + str(body_torque_output))
+	
 	#This assumes the camera node and the player body node are both facing the same exact direction globally by default, which I think I made sure was the case.
-	if (astronaut_head_joint.rotation.y > .005) or (astronaut_head_joint.rotation.y < -.005):
-		self.apply_torque(Vector3(0, astronaut_head_joint.rotation.y, 0))
-	if (astronaut_head_joint.rotation.x > .005) or (astronaut_head_joint.rotation.x < -.005):
-		self.apply_torque(Vector3(astronaut_head_joint.rotation.x, 0, 0))
-	if (astronaut_head_joint.rotation.z > .005) or (astronaut_head_joint.rotation.z < -.005):
-		self.apply_torque(Vector3(0, 0, astronaut_head_joint.rotation.z))
+	if (body_torque_output.y > body_rotation_activation_threshold) or (body_torque_output.y < -body_rotation_activation_threshold): #Used to be .005
+		self.apply_torque(Vector3(0, body_torque_output.y, 0))
+	if (body_torque_output.x > body_rotation_activation_threshold) or (body_torque_output.x < -body_rotation_activation_threshold):
+		self.apply_torque(Vector3(body_torque_output.x, 0, 0))
+	if (body_torque_output.z > body_rotation_activation_threshold) or (body_torque_output.z < -body_rotation_activation_threshold):
+		self.apply_torque(Vector3(0, 0, body_torque_output.z))
 	#These are over rotating, probably because I'm not doing them stepwise and they overlap a bit. Either that or because they need deceleration forces.
 	#What I actually need is an activation function that defines a target velocity at any given rotation and calculates the difference in actual vs target velocity and then applies a force based on that difference.
 
