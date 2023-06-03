@@ -32,7 +32,7 @@ var is_first_physics_process = true #This is set to be true during _process() in
 
 #used in player_body_look_activation_function() to set the turn-to-face activation force.
 var body_rotation_activation_scaler = 10
-var body_rotation_activation_threshold = .005
+var body_rotation_activation_threshold = .00005
 
 var input_dir = Vector3.ZERO
 var output_dir_basis = Basis()
@@ -202,22 +202,54 @@ func rotate_player_head_physics():
 	pass
 
 func rotate_player_body_toward_look_direction():
-	var perpendicular_vector_x = self.basis.x - astronaut_head_joint.basis.x
-	var perpendicular_vector_y = self.basis.y - astronaut_head_joint.basis.y
-	var midpoint_vector_x = astronaut_head_joint.basis.x.slerp(self.basis.x, .5)
-	var midpoint_vector_y = astronaut_head_joint.basis.y.slerp(self.basis.y, .5)
-	#var circle_vector_x = perpendicular_vector_x.rotated(midpoint_vector_x, .5 * PI)
-	#var circle_vector_y = perpendicular_vector_y.rotated(midpoint_vector_y, .5 * PI)
-	var intersection_vector = perpendicular_vector_x.cross(perpendicular_vector_y) #This is my axis of rotation that will get me where I want, but I don't know how far to rotate.
+	print(Vector3(0, 0, 0).length())
 	
-	#If the angle between midpoint_vector and intersection_vector is 0 or 180 then the required rotation is 180 degrees. If the angle is 90 degrees then the required rotation is the angle between self.basis and astronaut_head_joint.basis. The true required rotation is somewhere inbetween.
-	#self.basis + (.5 * perpendicular_vector) to (0,0) forms the hypotanuse of a right triangle. The angle between intersection_vector and midpoint_vector is one of the two remaining angles, and the third can just be calculated. Since I know the hypotenuse and all of the angles I can calculate the length of the side that aligns with intersection_vector and simply normalize then multiply that vector by the length to get the vector for that triangle edge. The vectors pointing from that point to self.basis and to astronaut_head_joint then give me the angle I need to rotate.
-	var intersection_vector_short = intersection_vector.normalized() * (self.basis.x + (.5 * perpendicular_vector_x)).length() * cos(intersection_vector.angle_to(midpoint_vector_x))
-	var intersect_short_to_self_x = self.basis.x - intersection_vector_short
-	var intersect_short_to_head_x = astronaut_head_joint.basis.x - intersection_vector_short
-	var final_rotation = intersection_vector.normalized() * intersect_short_to_self_x.angle_to(intersect_short_to_head_x)
+	print("Head X Vector: " + str(astronaut_head_joint.basis.x.normalized()) + " " + str(astronaut_head_joint.basis.x.normalized().length()))
+	print("Body X Vector: " + str(self.basis.x) + " " + str(self.basis.x.length()))
+	print("Head Y Vector: " + str(astronaut_head_joint.basis.y.normalized()) + " " + str(astronaut_head_joint.basis.y.normalized().length()))
+	print("Body Y Vector: " + str(self.basis.y) + " " + str(self.basis.y.length()))
+	print("Head Z Vector: " + str(astronaut_head_joint.basis.z.normalized()) + " " + str(astronaut_head_joint.basis.z.normalized().length()))
+	print("Body Z Vector: " + str(self.basis.z) + " " + str(self.basis.z.length()))
+	var perpendicular_vector_x = self.basis.x - astronaut_head_joint.basis.x.normalized()
+	var perpendicular_vector_y = self.basis.y - astronaut_head_joint.basis.y.normalized()
+	print("Perpendicular vector x: " + str(perpendicular_vector_x) + " " + str(perpendicular_vector_x.length()))
+	print("Perpendicular vector y: " + str(perpendicular_vector_y) + " " + str(perpendicular_vector_y.length()))
+	
+	var midpoint_vector_x
+	var midpoint_vector_y
+	var intersection_vector
+	var intersection_vector_short
+	var intersect_short_to_self_x
+	var intersect_short_to_head_x
+	var final_rotation
+	if (perpendicular_vector_x.length() > body_rotation_activation_threshold) and (perpendicular_vector_y.length() > body_rotation_activation_threshold):
+		print("Perpendicular head/body vectors are NOT zero.")
+		midpoint_vector_x = astronaut_head_joint.basis.x.slerp(self.basis.x, .5)
+		midpoint_vector_y = astronaut_head_joint.basis.y.slerp(self.basis.y, .5)
+		#var circle_vector_x = perpendicular_vector_x.rotated(midpoint_vector_x, .5 * PI)
+		#var circle_vector_y = perpendicular_vector_y.rotated(midpoint_vector_y, .5 * PI)
+		intersection_vector = perpendicular_vector_x.cross(perpendicular_vector_y) #This is my axis of rotation that will get me where I want, but I don't know how far to rotate.
+		
+		#If the angle between midpoint_vector and intersection_vector is 0 or 180 then the required rotation is 180 degrees. If the angle is 90 degrees then the required rotation is the angle between self.basis and astronaut_head_joint.basis. The true required rotation is somewhere inbetween.
+		#self.basis + (.5 * perpendicular_vector) to (0,0) forms the hypotanuse of a right triangle. The angle between intersection_vector and midpoint_vector is one of the two remaining angles, and the third can just be calculated. Since I know the hypotenuse and all of the angles I can calculate the length of the side that aligns with intersection_vector and simply normalize then multiply that vector by the length to get the vector for that triangle edge. The vectors pointing from that point to self.basis and to astronaut_head_joint then give me the angle I need to rotate.
+		intersection_vector_short = intersection_vector.normalized() * (self.basis.x + (.5 * perpendicular_vector_x)).length() * cos(intersection_vector.angle_to(midpoint_vector_x))
+		intersect_short_to_self_x = self.basis.x - intersection_vector_short
+		intersect_short_to_head_x = astronaut_head_joint.basis.x - intersection_vector_short
+		final_rotation = intersection_vector.normalized() * intersect_short_to_self_x.angle_to(intersect_short_to_head_x)
+	elif perpendicular_vector_x.length() <= body_rotation_activation_threshold:
+		print("Perpendicular head/body X vector IS zero.")
+		if astronaut_head_joint.basis.y.angle_to(self.basis.z) > (.5 * PI):
+			final_rotation = self.basis.x.normalized() * astronaut_head_joint.basis.y.angle_to(self.basis.y)
+		else:
+			final_rotation = -self.basis.x.normalized() * astronaut_head_joint.basis.y.angle_to(self.basis.y)
+	elif perpendicular_vector_y.length() <= body_rotation_activation_threshold:
+		print("Perpendicular head/body Y vector IS zero.")
+		if astronaut_head_joint.basis.z.angle_to(self.basis.x) > (.5 * PI):
+			final_rotation = self.basis.y.normalized() * astronaut_head_joint.basis.x.angle_to(self.basis.x)
+		else:
+			final_rotation = -self.basis.y.normalized() * astronaut_head_joint.basis.x.angle_to(self.basis.x)
 	print("Body look vector: " + str(final_rotation) + " " + str(final_rotation.length()))
-	
+		
 	#I still need to calculate the current vector of angular velocity. It should be the same process, except I may have to save the state each frame and freer to that to do the calculation. Once I have it I have to subtract it somehow from my target angular velocity.
 	var global_vector_x = Vector3(1, 0, 0)
 	var global_vector_y = Vector3(0, 1, 0)
@@ -232,24 +264,51 @@ func rotate_player_body_toward_look_direction():
 	self_basis_previous.x = self_basis_previous.x.rotated(global_vector_z, self_rotation_previous.z)
 	self_basis_previous.y = self_basis_previous.y.rotated(global_vector_z, self_rotation_previous.z)
 	self_basis_previous.z = self_basis_previous.z.rotated(global_vector_z, self_rotation_previous.z)
+	print("Body X Vector: " + str(self.basis.x) + " " + str(self.basis.x.length()))
+	print("Body previous X Vector: " + str(self_basis_previous.x) + " " + str(self_basis_previous.x.length()))
+	print("Body Y Vector: " + str(self.basis.y) + " " + str(self.basis.y.length()))
+	print("Body previous Y Vector: " + str(self_basis_previous.y) + " " + str(self_basis_previous.y.length()))
+	print("Body Z Vector: " + str(self.basis.z) + " " + str(self.basis.z.length()))
+	print("Body previous Z Vector: " + str(self_basis_previous.z) + " " + str(self_basis_previous.z.length()))
 	var perpendicular_vector_x_previous = self_basis_previous.x - self.basis.x
 	var perpendicular_vector_y_previous = self_basis_previous.y - self.basis.y
-	var midpoint_vector_x_previous = self.basis.x.slerp(self_basis_previous.x, .5)
-	var midpoint_vector_y_previous = self.basis.y.slerp(self_basis_previous.x, .5)
-	var intersection_vector_previous = perpendicular_vector_x_previous.cross(perpendicular_vector_y_previous) #This is the axis of rotation
-	print("perpendicular_vector_x_previous: " + str(perpendicular_vector_x_previous))
-	print("perpendicular_vector_y_previous: " + str(perpendicular_vector_y_previous))
-	print("intersection_vector_previous: " + str(intersection_vector_previous))
-	var intersection_vector_short_previous = intersection_vector_previous.normalized() * (self_basis_previous.x + (.5 * perpendicular_vector_x_previous)).length() * cos(intersection_vector_previous.angle_to(midpoint_vector_x_previous))
-	var intersect_short_to_past_x_previous = self_basis_previous.x - intersection_vector_short_previous
-	var intersect_short_to_present_x_previous = self.basis.x - intersection_vector_short_previous
-	print("intersect_short_to_past_x_previous.angle_to: " + str(intersect_short_to_past_x_previous.angle_to(intersect_short_to_present_x_previous)))
-	print("intersection_vector_previous: " + str(intersection_vector_previous))
-	var final_rotation_previous = intersection_vector_previous.normalized() * intersect_short_to_past_x_previous.angle_to(intersect_short_to_present_x_previous) #This is the axis of rotation and it's magnitude is the rotation angle in radians.
-	print("Current angular vector: " + str(final_rotation_previous) + " " + str(final_rotation_previous.length()))
+	print("Perpendicular vector previous x: " + str(perpendicular_vector_x_previous) + " " + str(perpendicular_vector_x_previous.length()))
+	print("Perpendicular vector previous y: " + str(perpendicular_vector_y_previous) + " " + str(perpendicular_vector_y_previous.length()))
+	var midpoint_vector_x_previous
+	var midpoint_vector_y_previous
+	var intersection_vector_previous
+	var intersection_vector_short_previous
+	var intersect_short_to_past_x_previous
+	var intersect_short_to_present_x_previous
+	var final_rotation_previous
+	if (perpendicular_vector_x_previous.length() > body_rotation_activation_threshold) and (perpendicular_vector_y_previous.length() > body_rotation_activation_threshold):
+		print("Perpendicular body/body_previous vectors are NOT zero.")
+		midpoint_vector_x_previous = self.basis.x.slerp(self_basis_previous.x, .5)
+		midpoint_vector_y_previous = self.basis.y.slerp(self_basis_previous.x, .5)
+		intersection_vector_previous = perpendicular_vector_x_previous.cross(perpendicular_vector_y_previous) #This is the axis of rotation
+		print("perpendicular_vector_x_previous: " + str(perpendicular_vector_x_previous))
+		print("perpendicular_vector_y_previous: " + str(perpendicular_vector_y_previous))
+		print("intersection_vector_previous: " + str(intersection_vector_previous))
+		intersection_vector_short_previous = intersection_vector_previous.normalized() * (self_basis_previous.x + (.5 * perpendicular_vector_x_previous)).length() * cos(intersection_vector_previous.angle_to(midpoint_vector_x_previous))
+		intersect_short_to_past_x_previous = self_basis_previous.x - intersection_vector_short_previous
+		intersect_short_to_present_x_previous = self.basis.x - intersection_vector_short_previous
+		print("intersect_short_to_past_x_previous.angle_to: " + str(intersect_short_to_past_x_previous.angle_to(intersect_short_to_present_x_previous)))
+		print("intersection_vector_previous: " + str(intersection_vector_previous))
+		final_rotation_previous = intersection_vector_previous.normalized() * intersect_short_to_past_x_previous.angle_to(intersect_short_to_present_x_previous) #This is the axis of rotation and it's magnitude is the rotation angle in radians.
+		print("Current angular vector: " + str(final_rotation_previous) + " " + str(final_rotation_previous.length()))
+	elif perpendicular_vector_x_previous.length() <= body_rotation_activation_threshold:
+		print("Perpendicular body/body_previous X vector IS zero.")
+		if self.basis.y.angle_to(self_basis_previous.z) > (.5 * PI):
+			final_rotation_previous = self_basis_previous.x.normalized() * self.basis.y.angle_to(self_basis_previous.y)
+			print("Current angular vector: " + str(final_rotation_previous) + " " + str(final_rotation_previous.length()))
+	elif perpendicular_vector_y_previous.length() <= body_rotation_activation_threshold:
+		print("Perpendicular body/body_previous Y vector IS zero.")
+		if self.basis.z.angle_to(self_basis_previous.x) > (.5 * PI):
+			final_rotation_previous = self_basis_previous.y.normalized() * self.basis.x.angle_to(self_basis_previous.x)
+			print("Current angular vector: " + str(final_rotation_previous) + " " + str(final_rotation_previous.length()))
 	
-	#Once I have the current rotational angle and the target rotation, I need to combine them. I should be able to just subtract the past vector from the other and the result is what I want.
-	final_rotation = final_rotation - final_rotation_previous
+		#Once I have the current rotational angle and the target rotation, I need to combine them. I should be able to just subtract the past vector from the other and the result is what I want.
+		final_rotation = final_rotation - final_rotation_previous
 	print("Final torque vector: " + str(final_rotation) + " " + str(final_rotation.length()))
 	
 	#Once I have the required angle I need to rotate I can use that to calculate how much force to use. I can use some sort of lerp function where I take a fraction of the remaining angle and try to accelerate or decelerate the body to that value. I can tweak the feeling of the body look by picking a different fraction for the lerp function, as well as implementing a max force value. I might also multiply the angle by some value so that the target speed is something specific in the case where the rotation is 180 degrees.
@@ -261,6 +320,7 @@ func rotate_player_body_toward_look_direction():
 		final_torque_vector = final_torque_vector.normalized() * body_look_max_force
 	
 	self.apply_torque(final_torque_vector.normalized() * 100)
+	print("Final torque vector multiplied: " + str(final_torque_vector.normalized() * 100) + " " + str((final_torque_vector.normalized() * 100).length()))
 	pass
 
 func rotate_player_body_toward_look_direction_OLD2():
